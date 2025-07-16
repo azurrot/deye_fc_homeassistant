@@ -2,16 +2,18 @@
 
 #!/bin/bash
 
+# Absoluter Pfad zu deyeat:
+DEYEAT="/config/scripts/deyeat"
+
 # Übergabeparameter prüfen
 if [ "$1" == "5" ]; then
-  ./deyeat -t 192.168.178.45:48899 -xmbw 00280001020005
+  $DEYEAT -t 192.168.178.177:48899 -xmbw 00280001020005
 elif [ "$1" == "100" ]; then
-  ./deyeat -t 192.168.178.45:48899 -xmbw 00280001020064
+  $DEYEAT -t 192.168.178.177:48899 -xmbw 00280001020064
 else
   echo "Ungültiger Parameter: $1"
   exit 1
 fi
-
 
 
 
@@ -21,6 +23,7 @@ chmod +x /config/scripts/set_maxpower.sh
 
 configuration.yaml
 
+      
 shell_command:
-  set_maxpower_5: "/scripts/set_maxpower.sh 5"
-  set_maxpower_100: "/scripts/set_maxpower.sh 100"
+  set_maxpower_5: "bash /config/scripts/set_maxpower.sh 5"
+  set_maxpower_100: "bash /config/scripts/set_maxpower.sh 100"
