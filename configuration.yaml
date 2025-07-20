@@ -1,0 +1,7 @@
+utility_meter:
+  energie_getrennt:
+    source: sensor.shellyplus1pm_4855199b1508_switch_0_energy
+    cycle: daily
+    tariffs:
+      - solar
+      - batterie
