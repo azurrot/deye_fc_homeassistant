@@ -1,0 +1,59 @@
+#include <avr/sleep.h>
+#include <avr/wdt.h>
+#include <avr/interrupt.h>
+
+#define RST_PIN 1      // PB1 → ESP RST
+#define CHECK_PIN A2   // PB2 (Pin 7) → zu prüfende Spannung
+#define ADC_THRESHOLD 1000  // entspricht ca. 3,22 V bei VCC = 3,3 V
+
+volatile bool wdt_triggered = false;
+
+void setup() {
+  pinMode(RST_PIN, OUTPUT);
+  digitalWrite(RST_PIN, HIGH);  // kein Reset auslösen
+
+  setup_watchdog();
+}
+
+void loop() {
+  // 15 Minuten = 112 * 8 Sekunden
+  for (int i = 0; i < 112; i++) {
+    enter_sleep();
+  }
+
+  // Spannung prüfen
+  int adc_value = analogRead(CHECK_PIN);
+
+  if (adc_value < ADC_THRESHOLD) {
+    // Spannung zu niedrig → ESP aufwecken
+    digitalWrite(RST_PIN, LOW);
+    delay(200);  // 200 ms Resetimpuls
+    digitalWrite(RST_PIN, HIGH);
+  }
+}
+
+void setup_watchdog() {
+  MCUSR &= ~(1 << WDRF);
+  WDTCR |= (1 << WDCE) | (1 << WDE);
+  WDTCR = (1 << WDP3); // 8s
+  WDTCR |= (1 << WDIE);
+}
+
+void enter_sleep() {
+  wdt_triggered = false;
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_enable();
+  noInterrupts();
+  sleep_bod_disable();
+  interrupts();
+
+  sleep_cpu();
+
+  sleep_disable();
+  while (!wdt_triggered);
+}
+
+ISR(WDT_vect) {
+  wdt_triggered = true;
+}
