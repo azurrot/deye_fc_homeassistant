@@ -1,0 +1,91 @@
+esphome:
+  name: batteriecontroller
+  on_boot:
+    priority: -100
+    then:
+      - component.update: battery_voltage
+      - delay: 3s
+      - if:
+          condition:
+            - lambda: 'return id(relais_batterie).state == false;'
+          then:
+            - logger.log: "Boot: Relais ist AUS – gehe in Deep Sleep"
+            - deep_sleep.enter: deep_sleep_control
+          else:
+            - logger.log: "Boot: Relais ist AN – bleibe wach"
+
+esp8266:
+  board: esp01_1m
+
+ota:
+  password: ""
+  platform: esphome
+
+wifi:
+  ssid: "####"
+  password: "####"
+  power_save_mode: HIGH
+
+logger:
+  level: debug
+  baud_rate: 0
+
+mqtt:
+  id: mqtt_client
+  broker: 192.168.178.###
+  username: ####
+  password: ####
+  discovery: true
+  discovery_prefix: homeassistant
+  birth_message:
+    topic: batteriecontroller/status
+    payload: online
+    retain: true
+  will_message:
+    topic: batteriecontroller/status
+    payload: offline
+    retain: true
+  on_message:
+    - topic: batteriecontroller/relais/state
+      qos: 0
+      then:
+        - lambda: |-
+            if (x == "ON") {
+              id(relais_batterie).turn_on();
+              ESP_LOGD("main", "MQTT: Relais ON – wach bleiben");
+            } else {
+              id(relais_batterie).turn_off();
+              ESP_LOGD("main", "MQTT: Relais OFF – gehe schlafen");
+              // Nur bei OFF den neuen State publishen
+              id(mqtt_client).publish("batteriecontroller/switch/relais_batterie/state", "OFF", true);
+              id(deep_sleep_control).begin_sleep();
+            }
+
+sensor:
+  - platform: adc
+    pin: A0
+    id: battery_voltage
+    name: "Batteriespannung"
+    update_interval: 30sec
+    filters:
+      - multiply: 57.79
+    on_value:
+      then:
+        - lambda: |-
+            char buffer[10];
+            snprintf(buffer, sizeof(buffer), "%.2f", x);
+            std::string payload(buffer);
+            id(mqtt_client).publish("esphome-web-b4151f/sensor/batteriespannung/state", payload, true);
+            ESP_LOGD("main", "Gemessene Batteriespannung: %s", payload.c_str());
+
+
+switch:
+  - platform: gpio
+    pin: GPIO14
+    id: relais_batterie
+    name: "Relais Batterie"
+    restore_mode: RESTORE_DEFAULT_OFF
+
+deep_sleep:
+  id: deep_sleep_control
+  sleep_duration: 15min
