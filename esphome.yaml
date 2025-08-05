@@ -22,8 +22,8 @@ ota:
   platform: esphome
 
 wifi:
-  ssid: "####"
-  password: "####"
+  ssid: "FRITZ!Box 7520 NM"
+  password: "TwFH7@n@mK@wDQwdJCjvqNG9Qrt45%V7"
   power_save_mode: HIGH
 
 logger:
@@ -32,9 +32,9 @@ logger:
 
 mqtt:
   id: mqtt_client
-  broker: 192.168.178.###
-  username: ####
-  password: ####
+  broker: 192.168.178.59
+  username: alice
+  password: test1000
   discovery: true
   discovery_prefix: homeassistant
   birth_message:
